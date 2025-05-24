@@ -1,3 +1,7 @@
+// ✅ Updated Product.js (Mongoose Model) with compatibility for frontend image field
+// — Preserves all original logic
+// — Adds alias for imageUrl used by frontend
+
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
@@ -24,6 +28,7 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // ✅ Virtual field for compatibility with frontend "imageUrl"
     tags: {
       type: [String],
       default: [],
@@ -34,10 +39,16 @@ const productSchema = new mongoose.Schema(
       createdAt: 'created_at',
       updatedAt: 'updated_at',
     },
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
-// Index for faster searches
+// ✅ Create a virtual "imageUrl" field so frontend can use product.imageUrl
+productSchema.virtual('imageUrl').get(function () {
+  return this.image_url;
+});
+
 productSchema.index({ name: 'text', description: 'text', category: 'text', tags: 'text' });
 
 const Product = mongoose.model('Product', productSchema);

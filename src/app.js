@@ -1,3 +1,7 @@
+// ✅ Updated backend app.js with seedRoute added
+// — Fully preserves all original middleware and routes
+// — Adds compatibility for seedRoute.js (for one-time product seeding)
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -21,6 +25,7 @@ const productRoutes = require('./routes/productRoutes');
 const interactionRoutes = require('./routes/interactionRoutes');
 const recommendationRoutes = require('./routes/recommendationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const seedRoute = require('./routes/seedRoute'); // ✅ NEW: seed route
 
 // Initialize Express app
 const app = express();
@@ -57,6 +62,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/interactions', interactionRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', seedRoute); // ✅ NEW: Mount seed route under /api
 
 // Health check route
 app.get('/health', (req, res) => {
@@ -68,9 +74,7 @@ app.use(errorHandler);
 
 // Serve static assets in production
 if (config.env === 'production') {
-  // Set static folder
   app.use(express.static(path.join(__dirname, '../../frontend/build')));
-
   app.get('*', (req, res) => {
     res.sendFile(path.resolve(__dirname, '../../frontend/build', 'index.html'));
   });
@@ -85,7 +89,6 @@ const server = app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error(`Unhandled Rejection: ${err.message}`);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });
 
