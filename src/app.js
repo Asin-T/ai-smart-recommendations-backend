@@ -1,6 +1,7 @@
-// ✅ Updated backend app.js with fixed CORS configuration
+// ✅ Updated backend app.js with fixed CORS configuration and selective rate limiting
 // — Fully preserves all original middleware and routes
 // — Fixes CORS configuration to properly handle multiple origins
+// — Implements selective rate limiting with higher limits for admin routes
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -88,13 +89,26 @@ app.use(compression());
 app.use(morgan('combined', { stream: logger.stream }));
 app.use(passport.initialize());
 
-// Rate limiting
-const limiter = rateLimit({
+// Standard rate limiting for general routes
+const standardLimiter = rateLimit({
   windowMs: config.rateLimit.windowMs,
   max: config.rateLimit.max,
   message: 'Too many requests from this IP, please try again later.'
 });
-app.use('/api/', limiter);
+
+// Higher rate limiting for admin routes
+const adminLimiter = rateLimit({
+  windowMs: config.rateLimit.admin?.windowMs || config.rateLimit.windowMs,
+  max: config.rateLimit.admin?.max || config.rateLimit.max * 5, // Higher limit for admin routes
+  message: 'Too many admin requests from this IP, please try again later.'
+});
+
+// Apply rate limiting selectively
+app.use('/api/users', standardLimiter);
+app.use('/api/products', standardLimiter);
+app.use('/api/interactions', standardLimiter);
+app.use('/api/recommendations', standardLimiter);
+app.use('/api/admin', adminLimiter); // Higher limits for admin routes
 
 // Routes
 app.use('/api/users', userRoutes);
