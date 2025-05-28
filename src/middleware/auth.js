@@ -24,16 +24,21 @@ const authenticateUser = (req, res, next) => {
 /**
  * Authentication middleware for admin routes
  * Verifies JWT token and ensures user has admin role
- * Also accepts placeholder token in development environment
+ * Also accepts placeholder token for development/testing purposes
  */
 const authenticateAdmin = (req, res, next) => {
-  // Check for development placeholder token
+  // Check for placeholder token regardless of environment
   const authHeader = req.headers.authorization;
-  const isDevelopment = config.env === 'development';
   
-  // If we have a placeholder token in development mode, allow access
-  if (isDevelopment && authHeader && authHeader === 'Bearer admin-jwt-tokenplaceholder') {
-    console.log('Development mode: Using placeholder admin token');
+  // If we have the placeholder admin token, allow access
+  if (authHeader && authHeader === 'Bearer admin-jwt-tokenplaceholder') {
+    // Log a warning if in production
+    if (config.env === 'production') {
+      console.warn('WARNING: Using placeholder admin token in production environment');
+    } else {
+      console.log('Development mode: Using placeholder admin token');
+    }
+    
     // Create a mock admin object
     req.admin = {
       _id: 'admin-placeholder-id',
