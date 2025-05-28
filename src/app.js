@@ -1,6 +1,6 @@
-// ✅ Updated backend app.js with seedRoute added
+// ✅ Updated backend app.js with fixed CORS configuration
 // — Fully preserves all original middleware and routes
-// — Adds compatibility for seedRoute.js (for one-time product seeding)
+// — Fixes CORS configuration to properly handle multiple origins
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -36,13 +36,53 @@ connectDB();
 // Initialize Passport
 initializePassport();
 
+// CORS Configuration - Fixed to properly handle multiple origins
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    
+    // Parse origins from config (could be string or array)
+    let allowedOrigins = config.cors.origin;
+    
+    // If it's a string with commas, convert to array
+    if (typeof allowedOrigins === 'string' && allowedOrigins.includes(',')) {
+      allowedOrigins = allowedOrigins.split(',').map(origin => origin.trim());
+    }
+    
+    // Check if origin is allowed
+    if (Array.isArray(allowedOrigins)) {
+      // Check against array of origins
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        // Check for wildcard domains
+        if (allowedOrigin.includes('*')) {
+          const pattern = new RegExp('^' + allowedOrigin.replace('*', '.*') + '$');
+          return pattern.test(origin);
+        }
+        return allowedOrigin === origin;
+      });
+      
+      if (isAllowed) {
+        return callback(null, true);
+      }
+    } else if (allowedOrigins === '*') {
+      // Allow any origin
+      return callback(null, true);
+    } else if (origin === allowedOrigins) {
+      // Single origin match
+      return callback(null, true);
+    }
+    
+    // If we get here, origin is not allowed
+    callback(new Error('CORS not allowed'));
+  },
+  credentials: true
+};
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: config.cors.origin,
-  credentials: true
-}));
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(compression());
 app.use(morgan('combined', { stream: logger.stream }));
